@@ -129,7 +129,7 @@ dmypy.json
 
 /data/**
 /exp/log/**
-/exp/slurm-log/**
+/exp/slurm_log/**
 /exp/snapshot/**
 
 !.gitkeep
