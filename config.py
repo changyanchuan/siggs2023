@@ -56,8 +56,12 @@ class Config:
     }
     # test_datasets = {
     #     'Greenland26X_22W_Sentinel2_2019-06-03_05.tif': [
-    #                     (1, -5585309, 10550998, -5221373, 10858855)]}
-    
+    #                     (1, -5585309, 10550998, -5221373, 10858855),
+    #                     (3, -5632853,  9919099, -5323000, 10233766)],
+    #     'Greenland26X_22W_Sentinel2_2019-06-19_20.tif': [
+    #                     (2, -5538547, 10227706, -5242379, 10555077),
+    #                     (4, -5559968,  9558244, -5302362,  9911194)]
+    # }
     
     region_file = 'lakes_regions.gpkg'
     training_region_file = 'lake_polygons_training.gpkg'
@@ -71,10 +75,11 @@ class Config:
     training_lr_degrade_gamma = 0.5
     training_bad_patience = 5
     
-    training_epochs = 1
+    training_epochs = 20
     training_batch_size = 16
     
     image_side_len = 256
+    area_threshold = 1e5 # m^2
     
     
     @classmethod

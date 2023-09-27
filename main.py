@@ -2,6 +2,7 @@
 
 import os
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
+import gc
 import sys
 import time
 import logging
@@ -176,7 +177,7 @@ def parse_args():
     
     parser.add_argument('--dumpfile_uniqueid', type = str, help = '') # see config.py
     parser.add_argument('--seed', type = int, help = '')
-    # parser.add_argument('--gpu', dest = 'gpu', action='store_true')
+    parser.add_argument('--debug', dest = 'debug', action='store_true')
     
     args = parser.parse_args()
     return dict(filter(lambda kv: kv[1] is not None, vars(args).items()))
@@ -210,6 +211,9 @@ if __name__ == '__main__':
     ds_eval = PairDataset(lst_img_eval, lst_label_eval)
     
     model = train_model(ds_train, ds_eval)
+    
+    del lst_img_train, lst_img_eval, lst_label_train, lst_label_eval, ds_train, ds_eval
+    gc.collect()
     
     dic_test = read_test_dataset()
     dic_preds = test(model, dic_test)

@@ -172,7 +172,7 @@ def read_test_dataset():
 def output_testresults(dic_preds):
     # lst_preds: dict of tensor~[1, 1, realh, realw], each tensor is for one region
     _time = time.time()
-    logging.debug('[Start] @={:.0f}'.format(_time))
+    logging.info('[Start] @={:.0f}'.format(_time))
     # 1. read a dummy img, for making use of its space
     # 2. read training gpk, for making use of its file format
     # 3. read 6 region polygons, for verifying outputs
@@ -188,6 +188,7 @@ def output_testresults(dic_preds):
     
     for tif_filename, lst_regions in Config.test_datasets.items():
         for region_meta in lst_regions:
+            _time2 = time.time()
             region_id = region_meta[0]
             region_range = region_meta[1:5]
             region_poly = df_regions_poly[df_regions_poly['region_num'] == region_id]['geometry'].item()
@@ -201,20 +202,27 @@ def output_testresults(dic_preds):
             whole_img[region_rows[0]: region_rows[1]+1, region_cols[0]: region_cols[1]+1] += pred
             # whole_img[whole_img>=1] = 1
             whole_img = whole_img.numpy()
+            logging.info("[testresult] image created")
                 
             lst_lakes = []
             for c, v in rasterio.features.shapes(whole_img, connectivity = 4, transform = tif.transform):
                 g = shape(c)
                 lst_lakes.append(g)
             lst_lakes.pop(-1)
+            logging.info("[testresult] shapes generated")
         
+            _n_df_lakes_poly = 0
+            lst_lakes_out = []
             for p in lst_lakes: # lakes_out: list of Polygon
-                if p.within(region_poly):
-                    df_lakes_poly = df_lakes_poly.append({'image': tif_filename, 
-                                                                'region_num': region_id, 
-                                                                'geometry': p}, ignore_index=True)
-            n_df_lakes_poly_ = df_lakes_poly[(df_lakes_poly['image']==tif_filename) & (df_lakes_poly['region_num']==region_id)].shape[0]
-            logging.info("#lst_lake={}, #df_lakes_poly={}".format(len(lst_lakes), n_df_lakes_poly_))
+                if True and p.within(region_poly) and p.area > Config.area_threshold:
+                    _n_df_lakes_poly += 1
+                    lst_lakes_out.append({'image': tif_filename, 'region_num': region_id, 'geometry': p})
+                    # df_lakes_poly = df_lakes_poly.append({'image': tif_filename, 
+                                                                # 'region_num': region_id, 
+                                                                # 'geometry': p}, ignore_index=True)
+            df_lakes_poly = pd.concat( [df_lakes_poly, gpd.GeoDataFrame(lst_lakes_out, crs = df_lakes_poly.crs)] )
+            logging.info("[testresult] @={:.2f}, #lst_lake={}, #df_lakes_poly={}".format( \
+                            time.time() - _time2, len(lst_lakes), _n_df_lakes_poly))
     
     if df_lakes_poly.size:
         df_lakes_poly.to_file(Config.data_dir + '/lake_polygons_test{}.gpkg'.format(Config.dumpfile_uniqueid), layer='lakes', driver="GPKG")
