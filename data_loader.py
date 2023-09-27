@@ -221,8 +221,8 @@ def output_testresults(dic_preds):
                                                                 # 'region_num': region_id, 
                                                                 # 'geometry': p}, ignore_index=True)
             df_lakes_poly = pd.concat( [df_lakes_poly, gpd.GeoDataFrame(lst_lakes_out, crs = df_lakes_poly.crs)] )
-            logging.info("[testresult] @={:.2f}, #lst_lake={}, #df_lakes_poly={}".format( \
-                            time.time() - _time2, len(lst_lakes), _n_df_lakes_poly))
+            logging.info("[testresult] tif={}, region_id={}, @={:.2f}, #lst_lake={}, #df_lakes_poly={}".format( \
+                            tif_filename[-17:-4], region_id, time.time() - _time2, len(lst_lakes), _n_df_lakes_poly))
     
     if df_lakes_poly.size:
         df_lakes_poly.to_file(Config.data_dir + '/lake_polygons_test{}.gpkg'.format(Config.dumpfile_uniqueid), layer='lakes', driver="GPKG")

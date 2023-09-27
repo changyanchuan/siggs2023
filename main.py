@@ -33,9 +33,10 @@ def train_model(ds_train, ds_eval):
     model = UNet(n_channels = 3, n_classes = 2)
     model.to(Config.device)
     
-    optimizer = torch.optim.RMSprop(model.parameters(),
-                              lr = Config.training_lr, weight_decay = Config.training_weight_decay, 
-                              momentum = Config.training_momentum)
+    # optimizer = torch.optim.RMSprop(model.parameters(),
+    #                           lr = Config.training_lr, weight_decay = Config.training_weight_decay, 
+    #                           momentum = Config.training_momentum)
+    optimizer = torch.optim.Adam(model.parameters(), lr = Config.training_lr, weight_decay = Config.training_weight_decay)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = Config.training_lr_degrade_step, gamma = Config.training_lr_degrade_gamma)
     criterion = torch.nn.CrossEntropyLoss(weight = torch.tensor([1.0, 300.0]).to(Config.device))
     
@@ -70,7 +71,7 @@ def train_model(ds_train, ds_eval):
             ram_ep.append(tools.RAMInfo.mem())
             
             if i_batch % 100 == 0 and i_batch:
-                logging.debug("[Training-Batch END]  ep-batch={}-{}, loss={:.3f}, @={:.2f}, gpu={}, ram={}" \
+                logging.info("[Training-Batch END]  ep-batch={}-{}, loss={:.3f}, @={:.2f}, gpu={}, ram={}" \
                             .format(i_ep, i_batch, loss.item(), time.time() - _time_batch,
                                     tools.GPUInfo.mem(), tools.RAMInfo.mem()))
 

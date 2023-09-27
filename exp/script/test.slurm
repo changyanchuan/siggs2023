@@ -2,11 +2,11 @@
 #SBATCH --partition deeplearn
 #SBATCH --qos gpgpudeeplearn
 #SBATCH -A punim1553
-#SBATCH --gres=gpu:v100:1
+#SBATCH --gres=gpu:A100:1
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
+#SBATCH --mem=128G
 #SBATCH --time=0-24:00:00
 #SBATCH --output=../slurm_log/slurm-%j.out
 
