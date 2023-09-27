@@ -67,6 +67,7 @@ class Config:
     training_region_file = 'lake_polygons_training.gpkg'
     
     backbone_str = 'unet'
+    load_checkpoint = False
     
     training_lr = 0.001
     training_weight_decay = 0.0001
@@ -74,14 +75,15 @@ class Config:
     training_lr_degrade_step = 5
     training_lr_degrade_gamma = 0.5
     training_bad_patience = 5
+    training_cel_weight = 300 # crossentropyloss weight
     
     training_epochs = 20
     training_batch_size = 16
     
     image_side_len = 256
-    area_threshold = 1e5 # m^2
-    
-    
+    area_threshold = 1e5 # m^2 Cartesian. confirmed
+
+
     @classmethod
     def update(cls, dic: dict):
         for k, v in dic.items():
@@ -94,8 +96,8 @@ class Config:
     
     @classmethod
     def post_updates(cls):
-        cls.checkpoint_file = '{}/{}_best.pt'.format(cls.snapshot_dir, cls.backbone_str)
-        # cls.checkpoint_file = '{}/{}_best{}.pt'.format(cls.snapshot_dir, cls.backbone_str, cls.dumpfile_uniqueid)
+        # cls.checkpoint_file = '{}/{}_best.pt'.format(cls.snapshot_dir, cls.backbone_str)
+        cls.checkpoint_file = '{}/{}_best{}.pt'.format(cls.snapshot_dir, cls.backbone_str, cls.dumpfile_uniqueid)
         return
 
 

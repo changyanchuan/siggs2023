@@ -38,7 +38,7 @@ def train_model(ds_train, ds_eval):
     #                           momentum = Config.training_momentum)
     optimizer = torch.optim.Adam(model.parameters(), lr = Config.training_lr, weight_decay = Config.training_weight_decay)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = Config.training_lr_degrade_step, gamma = Config.training_lr_degrade_gamma)
-    criterion = torch.nn.CrossEntropyLoss(weight = torch.tensor([1.0, 300.0]).to(Config.device))
+    criterion = torch.nn.CrossEntropyLoss(weight = torch.tensor([1.0, Config.training_cel_weight]).to(Config.device))
     
     best_loss_train = 1e10
     best_epoch = 0
@@ -179,6 +179,8 @@ def parse_args():
     parser.add_argument('--dumpfile_uniqueid', type = str, help = '') # see config.py
     parser.add_argument('--seed', type = int, help = '')
     parser.add_argument('--debug', dest = 'debug', action='store_true')
+    parser.add_argument('--load_checkpoint', dest = 'load_checkpoint', action='store_true')
+    parser.add_argument('--training_cel_weight', type = int, help = '')
     
     args = parser.parse_args()
     return dict(filter(lambda kv: kv[1] is not None, vars(args).items()))
@@ -197,28 +199,35 @@ if __name__ == '__main__':
     logging.info(Config.to_str())
     logging.info('=================================')
     
-
     _time = time.time()
     
     # 1. prepare data and dataloader
     # 2. train the model
     # 3. label the test dataset, and dump to file 
-    
-    lst_img, lst_label = read_datasets()
-    n = len(lst_img)
-    lst_img_train, lst_img_eval = lst_img[:int(n*0.8)], lst_img[int(n*0.8):]
-    lst_label_train, lst_label_eval = lst_label[:int(n*0.8)], lst_label[int(n*0.8):]
-    ds_train = PairDataset(lst_img_train, lst_label_train)
-    ds_eval = PairDataset(lst_img_eval, lst_label_eval)
-    
-    model = train_model(ds_train, ds_eval)
-    
-    del lst_img_train, lst_img_eval, lst_label_train, lst_label_eval, ds_train, ds_eval
-    gc.collect()
-    
+    model = None
+    if not Config.load_checkpoint:
+        lst_img, lst_label = read_datasets()
+        n = len(lst_img)
+        lst_img_train, lst_img_eval = lst_img[:int(n*0.8)], lst_img[int(n*0.8):]
+        lst_label_train, lst_label_eval = lst_label[:int(n*0.8)], lst_label[int(n*0.8):]
+        ds_train = PairDataset(lst_img_train, lst_label_train)
+        ds_eval = PairDataset(lst_img_eval, lst_label_eval)
+        
+        model = train_model(ds_train, ds_eval)
+        
+        del lst_img_train, lst_img_eval, lst_label_train, lst_label_eval, ds_train, ds_eval
+        gc.collect()
+        
+    else: # skip model training. load from checkpoint
+        logging.info('Load model from cp file.')
+        model = UNet(n_channels = 3, n_classes = 2)
+        cp = torch.load(Config.checkpoint_file)
+        model.load_state_dict(cp['model_state_dict'])
+        model.to(Config.device)
+
     dic_test = read_test_dataset()
     dic_preds = test(model, dic_test)
     output_testresults(dic_preds)
     
     logging.info('All done. @={:.2f}'.format(time.time() - _time))
-    
+

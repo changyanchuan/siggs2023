@@ -214,9 +214,11 @@ def output_testresults(dic_preds):
             _n_df_lakes_poly = 0
             lst_lakes_out = []
             for p in lst_lakes: # lakes_out: list of Polygon
-                if True and p.within(region_poly) and p.area > Config.area_threshold:
+                if p.within(region_poly) and p.area > Config.area_threshold:
                     _n_df_lakes_poly += 1
-                    lst_lakes_out.append({'image': tif_filename, 'region_num': region_id, 'geometry': p})
+                    
+                    lst_lakes_out.append({'image': tif_filename, 'region_num': region_id, \
+                                            'geometry': Polygon(p.exterior.coords)})
                     # df_lakes_poly = df_lakes_poly.append({'image': tif_filename, 
                                                                 # 'region_num': region_id, 
                                                                 # 'geometry': p}, ignore_index=True)
