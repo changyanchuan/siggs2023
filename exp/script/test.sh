@@ -18,5 +18,4 @@ do
 
     wholecommand="python ${exe_file} --training_cel_weight ${cel_weight} --dumpfile_uniqueid ${ts}"
     evalcmd "$wholecommand"
-    done
 done

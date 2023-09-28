@@ -15,6 +15,8 @@ import torch.nn.functional as F
 from config import Config
 import tools
 from model.unet_model import UNet
+from model.u2net import U2NETP, U2NET
+from model.loss import DiceLoss
 from data_loader import read_datasets, PairDataset
 from data_loader import read_test_dataset, output_testresults
 
@@ -24,22 +26,45 @@ nohup python  &> result &
 '''
 
 
+bce_loss = torch.nn.BCELoss(size_average=True).to(Config.device)
+
+def muti_bce_loss_fusion(d0, d1, d2, d3, d4, d5, d6, labels_v):
+	loss0 = bce_loss(d0,labels_v)
+	loss1 = bce_loss(d1,labels_v)
+	loss2 = bce_loss(d2,labels_v)
+	loss3 = bce_loss(d3,labels_v)
+	loss4 = bce_loss(d4,labels_v)
+	loss5 = bce_loss(d5,labels_v)
+	loss6 = bce_loss(d6,labels_v)
+	loss = loss0 + loss1 + loss2 + loss3 + loss4 + loss5 + loss6
+	return loss0, loss
+
+def normPRED(d):
+    ma = torch.max(d)
+    mi = torch.min(d)
+    dn = (d-mi)/(ma-mi)
+    return dn
+
+
 def train_model(ds_train, ds_eval):
     _time_func = time.time()
-    logging.info("[Training] Start. @={:.0f}".format(_time))
+    logging.info("[Training] Start. @={:.0f}".format(_time_func))
     
     dl_train = DataLoader(ds_train, batch_size = Config.training_batch_size, shuffle = True)
     
-    model = UNet(n_channels = 3, n_classes = 2)
+    if Config.backbone_str == 'unet':
+        model = UNet(n_channels = 3, n_classes = 2)
+    elif Config.backbone_str == 'u2net':
+        model = U2NET()
     model.to(Config.device)
     
-    # optimizer = torch.optim.RMSprop(model.parameters(),
-    #                           lr = Config.training_lr, weight_decay = Config.training_weight_decay, 
-    #                           momentum = Config.training_momentum)
     optimizer = torch.optim.Adam(model.parameters(), lr = Config.training_lr, weight_decay = Config.training_weight_decay)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size = Config.training_lr_degrade_step, gamma = Config.training_lr_degrade_gamma)
-    criterion = torch.nn.CrossEntropyLoss(weight = torch.tensor([1.0, Config.training_cel_weight]).to(Config.device))
     
+    if Config.backbone_str == 'unet':
+        criterion = torch.nn.CrossEntropyLoss(weight = torch.tensor([1.0, Config.training_cel_weight]).to(Config.device))
+        dice_loss = DiceLoss().to(Config.device)
+        
     best_loss_train = 1e10
     best_epoch = 0
     best_model_state_dict = None
@@ -62,7 +87,14 @@ def train_model(ds_train, ds_eval):
             labels = labels.squeeze(1).to(Config.device)  # [n, h, w]
 
             pred = model(imgs)
-            loss = criterion(pred, labels)
+            if Config.backbone_str == 'unet':
+                    loss = criterion(pred, labels)
+                    bce_weight = Config.training_celdice_loss_weight
+                    dlose = dice_loss(F.softmax(pred, dim=1).float(),
+                                        F.one_hot(labels, 2).permute(0, 3, 1, 2).float())
+                    loss = loss * bce_weight + (1 - bce_weight) * dlose
+            elif Config.backbone_str == 'u2net':
+                _, loss = muti_bce_loss_fusion(*pred, labels.unsqueeze(1))
             
             loss.backward()
             optimizer.step()
@@ -119,8 +151,15 @@ def eval_model(model, ds_eval):
         labels = labels.squeeze(1).cpu().detach().numpy()  # [n, h, w]
         lst_labels.append(labels)
 
-        pred = model(imgs) # [n, 2, h, w]
-        pred = torch.argmax(pred, dim = 1).cpu().detach().numpy() # [n, h, w]
+        if Config.backbone_str == 'unet':
+            pred = model(imgs) # [n, 2, h, w]
+            pred = torch.argmax(pred, dim = 1).cpu().detach().numpy() # [n, h, w]
+        elif Config.backbone_str == 'u2net':
+            pred = normPRED(model(imgs)[0]) # [n, 1, h, w]
+            pred[pred >= Config.training_u2net_threshold] = 1
+            pred[pred < Config.training_u2net_threshold] = 0
+            pred = pred.cpu().detach().numpy()
+            
         lst_preds.append(pred)
         
     f1 = tools.f1(np.concatenate(lst_labels).flatten(), 
@@ -154,8 +193,14 @@ def test(model, dic_test):
                 imgs = batch
                 imgs = imgs.to(Config.device) # [n, 3, h, w]
 
-                preds = model(imgs) # [n, 2, h, w]
-                preds = torch.argmax(preds, dim = 1).cpu().detach() # [n, h, w]
+                if Config.backbone_str == 'unet':
+                    pred = model(imgs) # [n, 2, h, w]
+                    pred = torch.argmax(pred, dim = 1).cpu().detach() # [n, h, w]
+                elif Config.backbone_str == 'u2net':
+                    pred = normPRED(model(imgs)[0]) # [n, 1, h, w]
+                    pred[pred >= Config.training_u2net_threshold] = 1
+                    pred[pred < Config.training_u2net_threshold] = 0
+
                 lst_preds.append(preds)
             
             preds = torch.cat(lst_preds, 0).unsqueeze(1)  # [big n, 1, h, w]
@@ -181,6 +226,8 @@ def parse_args():
     parser.add_argument('--debug', dest = 'debug', action='store_true')
     parser.add_argument('--load_checkpoint', dest = 'load_checkpoint', action='store_true')
     parser.add_argument('--training_cel_weight', type = int, help = '')
+    parser.add_argument('--training_celdice_loss_weight', type = float, help = '')
+    parser.add_argument('--training_u2net_threshold', type = float, help = '')
     
     args = parser.parse_args()
     return dict(filter(lambda kv: kv[1] is not None, vars(args).items()))

@@ -66,7 +66,7 @@ class Config:
     region_file = 'lakes_regions.gpkg'
     training_region_file = 'lake_polygons_training.gpkg'
     
-    backbone_str = 'unet'
+    backbone_str = 'u2net'
     load_checkpoint = False
     
     training_lr = 0.001
@@ -76,6 +76,10 @@ class Config:
     training_lr_degrade_gamma = 0.5
     training_bad_patience = 5
     training_cel_weight = 300 # crossentropyloss weight
+    # training_loss = 'bce' # cel: CrossEntropyLoss, bce: BCEEithLogitLoss+DiceLoss
+    training_celdice_loss_weight = 0.4 # [0, 1], bce weights, while dice weight = 1-this_value
+    training_u2net_threshold = 0.9
+    
     
     training_epochs = 20
     training_batch_size = 16

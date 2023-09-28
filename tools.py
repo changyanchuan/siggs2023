@@ -13,6 +13,7 @@ import psutil
 from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, roc_auc_score, rand_score
 from sklearn.preprocessing import label_binarize
 from datetime import datetime, timezone, timedelta
+from shapely.geometry import Polygon, Point
 
 # initializing here!!
 nvmlInit() 
@@ -47,6 +48,16 @@ def image_norm(t):
                         std = [0.29401004, 0.30372441, 0.31620496])(t)
     return t
     
+    
+def is_lake(poly):
+    # https://gis.stackexchange.com/questions/295874/getting-polygon-breadth-in-shapely
+    box = poly.minimum_rotated_rectangle
+    x, y = box.exterior.coords.xy
+    edge_length = (Point(x[0], y[0]).distance(Point(x[1], y[1])), Point(x[1], y[1]).distance(Point(x[2], y[2])))
+    length = max(edge_length)
+    width = min(edge_length)
+    return True if length / width >= 10.0 else False
+
     
 def mean(x):
     if x == []:
