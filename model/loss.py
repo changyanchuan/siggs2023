@@ -11,8 +11,8 @@ class DiceLoss(nn.Module):
 
         # probs = torch.sigmoid(logits)
         probs = logits
-        m1 = probs.view(num, -1)
-        m2 = targets.view(num, -1)
+        m1 = probs.reshape(num, -1)
+        m2 = targets.reshape(num, -1)
         intersection = (m1 * m2)
  
         score = 2. * (intersection.sum(1) + smooth) / (m1.sum(1) + m2.sum(1) + smooth)

@@ -69,7 +69,7 @@ class Config:
     backbone_str = 'u2net'
     load_checkpoint = False
     
-    training_lr = 0.001
+    training_lr = 0.0005
     training_weight_decay = 0.0001
     training_momentum = 0.999
     training_lr_degrade_step = 5
@@ -80,10 +80,10 @@ class Config:
     training_celdice_loss_weight = 0.4 # [0, 1], bce weights, while dice weight = 1-this_value
     training_u2net_threshold = 0.9
     
-    
     training_epochs = 20
     training_batch_size = 16
     
+    image_augment = False
     image_side_len = 256
     area_threshold = 1e5 # m^2 Cartesian. confirmed
 

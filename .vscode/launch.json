@@ -11,7 +11,17 @@
             "program": "${workspaceFolder}/main.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
-            // "args": [""],
+            "args": ["--backbone_str", "unet"],
+            "justMyCode": true
+        },
+        {
+            "name": "load_cp_u2net",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}",
+            "args": ["--backbone_str", "u2net", "--load_checkpoint", "--dumpfile_uniqueid", "16959765192456520", "--training_u2net_threshold", "0.9"],
             "justMyCode": true
         },
     ]

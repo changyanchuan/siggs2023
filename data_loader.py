@@ -117,13 +117,23 @@ def read_dataset(dataset_file, region_id, region_range, lakes_poly):
     side = Config.image_side_len
     img = torch.from_numpy(img).float().unsqueeze(0) # [1, 3, h, w]
     img = tools.unfold4D_with_padding(img, side, 255)
-    img = tools.image_norm(img)
     
     lakes_label = torch.from_numpy(lakes_label).long().unsqueeze(0).unsqueeze(0) # [1, 1, h, w]
     lakes_label = tools.unfold4D_with_padding(lakes_label, side, 0)
+    
+    if Config.image_augment:
+        img = img.float()
+        img_aug = tools.image_augmentation(img)
+        img = torch.cat([img, img_aug], dim = 0)
+        img = tools.image_norm(img)
+        lakes_label = lakes_label.repeat([2, 1, 1, 1])
+    else:
+        img = tools.image_norm(img)
 
-    logging.info('[Done] @={:.2f}, dataset={}, region_id={}, #lakes_poly={}, #lst_lakes={}, img.shape={}, lakes_label.shape={}'.format( \
-                time.time() - _time, dataset_file, region_id, len(lakes_poly), len(lst_lakes), img.shape, lakes_label.shape))
+    logging.info('[Done] @={:.2f}, dataset={}, region_id={}, #lakes_poly={}, #lst_lakes={}, '
+                'aug={}, img.shape={}, lakes_label.shape={}'.format( \
+                time.time() - _time, dataset_file, region_id, len(lakes_poly), len(lst_lakes), \
+                Config.image_augment, img.shape, lakes_label.shape))
     
     logging.debug('weights -- {:.0f}'.format( np.prod(lakes_label.shape)/lakes_label.sum() ))
 

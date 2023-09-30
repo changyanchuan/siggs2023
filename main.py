@@ -94,7 +94,7 @@ def train_model(ds_train, ds_eval):
                                         F.one_hot(labels, 2).permute(0, 3, 1, 2).float())
                     loss = loss * bce_weight + (1 - bce_weight) * dlose
             elif Config.backbone_str == 'u2net':
-                _, loss = muti_bce_loss_fusion(*pred, labels.unsqueeze(1))
+                _, loss = muti_bce_loss_fusion(*pred, labels.float().unsqueeze(1))
             
             loss.backward()
             optimizer.step()
@@ -194,12 +194,13 @@ def test(model, dic_test):
                 imgs = imgs.to(Config.device) # [n, 3, h, w]
 
                 if Config.backbone_str == 'unet':
-                    pred = model(imgs) # [n, 2, h, w]
-                    pred = torch.argmax(pred, dim = 1).cpu().detach() # [n, h, w]
+                    preds = model(imgs) # [n, 2, h, w]
+                    preds = torch.argmax(preds, dim = 1).cpu().detach() # [n, h, w]
                 elif Config.backbone_str == 'u2net':
-                    pred = normPRED(model(imgs)[0]) # [n, 1, h, w]
-                    pred[pred >= Config.training_u2net_threshold] = 1
-                    pred[pred < Config.training_u2net_threshold] = 0
+                    preds = normPRED(model(imgs)[0]).squeeze(1) # [n,  h, w]
+                    preds[preds >= Config.training_u2net_threshold] = 1
+                    preds[preds < Config.training_u2net_threshold] = 0
+                    preds = preds.to(dtype = torch.uint8).cpu().detach()
 
                 lst_preds.append(preds)
             
@@ -225,9 +226,13 @@ def parse_args():
     parser.add_argument('--seed', type = int, help = '')
     parser.add_argument('--debug', dest = 'debug', action='store_true')
     parser.add_argument('--load_checkpoint', dest = 'load_checkpoint', action='store_true')
+    
+    parser.add_argument('--backbone_str', type = str, help = '') # see config.py
     parser.add_argument('--training_cel_weight', type = int, help = '')
     parser.add_argument('--training_celdice_loss_weight', type = float, help = '')
     parser.add_argument('--training_u2net_threshold', type = float, help = '')
+    parser.add_argument('--image_augment', dest = 'image_augment', action='store_true')
+    
     
     args = parser.parse_args()
     return dict(filter(lambda kv: kv[1] is not None, vars(args).items()))
@@ -267,7 +272,10 @@ if __name__ == '__main__':
         
     else: # skip model training. load from checkpoint
         logging.info('Load model from cp file.')
-        model = UNet(n_channels = 3, n_classes = 2)
+        if Config.backbone_str == 'unet':
+            model = UNet(n_channels = 3, n_classes = 2)
+        elif Config.backbone_str == 'u2net':
+            model = U2NET()
         cp = torch.load(Config.checkpoint_file)
         model.load_state_dict(cp['model_state_dict'])
         model.to(Config.device)

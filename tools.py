@@ -5,6 +5,7 @@ import random
 import torch
 from torch.nn.utils.rnn import pad_sequence
 import torch.nn.functional as F
+from torchvision import transforms as tvt
 from torchvision.transforms import Normalize as VisionNormalize
 import numpy as np
 from itertools import tee
@@ -43,11 +44,19 @@ def fold4D_depadding(x, side, real_h, real_w):
 
 
 def image_norm(t):
-    t = t / 255
-    t = VisionNormalize(mean = [0.65747579,0.67678677,0.67675262], 
-                        std = [0.29401004, 0.30372441, 0.31620496])(t)
+    t = t / 255.
+    t = VisionNormalize(mean = [0.7913, 0.8069, 0.8089], 
+                        std = [0.2094, 0.2274, 0.2478])(t)
     return t
     
+    
+def image_augmentation(t):
+    # t : float32
+    fn =  tvt.Compose([tvt.ColorJitter(contrast = (0.8, 1.5), brightness = [0.7, 1.3]), \
+                            tvt.GaussianBlur(kernel_size = (1, 11), sigma = (3, 7)), \
+                            tvt.RandomAdjustSharpness(3, p = 0.5)])
+    return fn(t)
+
     
 def is_lake(poly):
     # https://gis.stackexchange.com/questions/295874/getting-polygon-breadth-in-shapely

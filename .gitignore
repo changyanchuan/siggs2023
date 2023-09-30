@@ -126,6 +126,7 @@ dmypy.json
 
 /result
 /test.ipynb
+/*.jpg
 
 /data/**
 /exp/log/**
