@@ -78,12 +78,12 @@ class Config:
     training_cel_weight = 300 # crossentropyloss weight
     # training_loss = 'bce' # cel: CrossEntropyLoss, bce: BCEEithLogitLoss+DiceLoss
     training_celdice_loss_weight = 0.4 # [0, 1], bce weights, while dice weight = 1-this_value
-    training_u2net_threshold = 0.9
+    training_u2net_threshold = 0.4
     
     training_epochs = 20
     training_batch_size = 16
     
-    image_augment = False
+    image_augment = True
     image_side_len = 256
     area_threshold = 1e5 # m^2 Cartesian. confirmed
 
