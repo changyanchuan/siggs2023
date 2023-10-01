@@ -78,7 +78,7 @@ class Config:
     training_cel_weight = 300 # crossentropyloss weight
     # training_loss = 'bce' # cel: CrossEntropyLoss, bce: BCEEithLogitLoss+DiceLoss
     training_celdice_loss_weight = 0.4 # [0, 1], bce weights, while dice weight = 1-this_value
-    training_u2net_threshold = 0.4
+    training_u2net_threshold = 0.5
     
     training_epochs = 20
     training_batch_size = 16

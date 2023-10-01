@@ -2,10 +2,8 @@ import os
 import sys
 import time
 import math
-import h5py
 import random
 import logging
-import pickle
 import pandas as pd
 import numpy as np
 import rasterio
