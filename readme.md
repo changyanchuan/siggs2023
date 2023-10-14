@@ -22,3 +22,7 @@ python main.py --load_checkpoint --dumpfile_uniqueid 2
 
 ## Contact
 Email changyanchuan@gmail.com if you have any queries.
+
+
+## License
+The source code for the site is under the MIT license, which you can find in the LICENSE.txt file.
